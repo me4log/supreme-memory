@@ -67,9 +67,6 @@ type SiteMapUrls struct {
 	Urls    []*SiteMapUrl `xml:"url"`
 }
 
-var mu sync.Mutex
-var fileIndex = 0
-
 func readLines(path string) ([]string, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -99,29 +96,26 @@ func writeLines(lines []string, path string) error {
 	return w.Flush()
 }
 
-func downloadAndSaveXML(url string, wg *sync.WaitGroup) {
+func downloadAndSaveXML(url string, fileIndex string, wg *sync.WaitGroup) {
 
 	defer wg.Done()
 
 	client := http.Client{Timeout: 10 * time.Second}
 	res, err := client.Get(url)
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer res.Body.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	mu.Lock()
-	fileIndex++
-	fileName := strconv.Itoa(fileIndex) + ".xml"
+	fileName := fileIndex + ".xml"
+
 	f, err := os.Create("data/" + fileName)
-	mu.Unlock()
-
-	defer f.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
-	io.Copy(f, res.Body)
+	defer f.Close()
 
+	io.Copy(f, res.Body)
 	log.Println(fileName)
 }
 
@@ -129,27 +123,29 @@ func StepOne() {
 
 	client := http.Client{Timeout: 10 * time.Second}
 	res, err := client.Get(SiteMapURL)
-	defer res.Body.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer res.Body.Close()
+
 
 	siteMap := new(SiteMapIndex)
 	xml.NewDecoder(res.Body).Decode(siteMap)
 
 	f, err := os.Create("data/sitemap.xml")
-	defer f.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer f.Close()
 
 	xml.NewEncoder(f).Encode(siteMap)
 
 	var wg sync.WaitGroup
 	for index, url := range siteMap.Maps {
-		log.Println(strconv.Itoa(index) + ":" + url.Url)
+		fileIndex := strconv.Itoa(index)
+		log.Println(fileIndex + ":" + url.Url)
 		wg.Add(1)
-		go downloadAndSaveXML(url.Url, &wg)
+		go downloadAndSaveXML(url.Url, fileIndex, &wg)
 	}
 	wg.Wait()
 }
@@ -158,10 +154,10 @@ func getLinks(fileIndex int, c chan []string) {
 
 	links := make([]string, 0)
 	f, err := os.Open("data/" + strconv.Itoa(fileIndex) + ".xml")
-	defer f.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer f.Close()
 
 	urlset := new(SiteMapUrls)
 	xml.NewDecoder(f).Decode(urlset)
@@ -171,8 +167,7 @@ func getLinks(fileIndex int, c chan []string) {
 			links = append(links, url.Url)
 		}
 	}
-	log.Println(fileIndex)
-	log.Println(len(links))
+
 	c <- links
 
 }
@@ -195,16 +190,18 @@ func StepTwo() {
 
 func getAndSavePage(url string, fileName string) {
 	client := http.Client{Timeout: 10 * time.Second}
+
 	res, err := client.Get(url)
-	defer res.Body.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer res.Body.Close()
 
 	f, err := os.Create("data/pages/" + fileName)
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer f.Close()
 	io.Copy(f, res.Body)
 	log.Println(fileName + ": " + url)
 }
@@ -232,11 +229,13 @@ func StepFour() {
 
 	for _, file := range files {
 		log.Println(file.Name())
+
 		f, err := os.Open("data/pages/" + file.Name())
-		defer f.Close()
 		if err != nil {
 			log.Fatal(err)
 		}
+		defer f.Close()
+
 
 		doc, err := goquery.NewDocumentFromReader(f)
 		if err != nil {
@@ -249,8 +248,10 @@ func StepFour() {
 		}
 
 		item := new(CatalogItem)
+
 		item.Name = strings.Replace(doc.Find("#card-h1-reload-new").Text(), "\n", "", -1)
 		item.Description = strings.Replace(doc.Find("[itemprop=\"description\"] p").Text(), "\n", "", -1)
+
 		chars.Each(func(i1 int, s1 *goquery.Selection) {
 			attribute := new(CatalogItemAttribute)
 			attribute.Key = s1.Find(".thName").Text()
@@ -260,7 +261,6 @@ func StepFour() {
 
 		measures := strings.Replace(strings.Replace(doc.Find("#vgh-block div").Text(), "\n", "", 1), "\n", "#", 2)
 		measureList := strings.Split(measures, "#")
-
 		for _, m := range measureList {
 			measure := new(CatalogItemMeasure)
 			m0 := strings.Split(m, ":")
@@ -281,10 +281,11 @@ func StepFour() {
 	}
 
 	rf, err := os.Create("data/catalog.xml")
-	defer rf.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer rf.Close()
+
 	xml.NewEncoder(rf).Encode(catalog)
 }
 
