@@ -40,6 +40,6 @@ func getSiteMap() {
 	io.Copy(f, res.Body)
 }
 
-func main() {
+func Run() {
 	getSiteMap()
 }

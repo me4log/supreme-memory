@@ -1,9 +1,10 @@
-package vseinstrumenty.go
+package vseinstrumenty
 
 import (
 	"bufio"
 	"encoding/xml"
 	"fmt"
+	"github.com/PuerkitoBio/goquery"
 	"io"
 	"io/ioutil"
 	"log"
@@ -13,11 +14,10 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/PuerkitoBio/goquery"
 )
 
 const (
+	DataPath   = "grabers/vseinstrumenty/data/"
 	SiteMapURL = "http://www.vseinstrumenti.ru/sitemap.xml"
 	FilesCount = 13
 	Template1  = "http://www.vseinstrumenti.ru/instrument/shurupoverty/akkumulyatornye_dreli-shurupoverty/"
@@ -115,7 +115,7 @@ func downloadAndSaveXML(url string, fileIndex string, wg *sync.WaitGroup) {
 
 	fileName := fileIndex + ".xml"
 
-	f, err := os.Create("vseinstrumenty/data/" + fileName)
+	f, err := os.Create(DataPath + fileName)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -137,7 +137,7 @@ func StepOne() {
 	siteMap := new(SiteMapIndex)
 	xml.NewDecoder(res.Body).Decode(siteMap)
 
-	f, err := os.Create("vseinstrumenty/data/sitemap.xml")
+	f, err := os.Create(DataPath + "/sitemap.xml")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -158,7 +158,7 @@ func StepOne() {
 func getLinks(fileIndex int, c chan []string) {
 
 	links := make([]string, 0)
-	f, err := os.Open("vseinstrumenty/data/" + strconv.Itoa(fileIndex) + ".xml")
+	f, err := os.Open(DataPath + strconv.Itoa(fileIndex) + ".xml")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -196,7 +196,7 @@ func StepTwo() {
 		}
 	}
 	close(c)
-	writeLines(links, "vseinstrumenty/data/links.txt")
+	writeLines(links, DataPath+"/links.txt")
 }
 
 func getAndSavePage(url string, fileName string) {
@@ -208,7 +208,7 @@ func getAndSavePage(url string, fileName string) {
 	}
 	defer res.Body.Close()
 
-	f, err := os.Create("vseinstrumenty/data/pages/" + fileName)
+	f, err := os.Create(DataPath + "/pages/" + fileName)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -218,7 +218,7 @@ func getAndSavePage(url string, fileName string) {
 }
 
 func StepThree() {
-	links, err := readLines("vseinstrumenty/data/links.txt")
+	links, err := readLines(DataPath + "/links.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -233,7 +233,7 @@ func StepFour() {
 
 	catalog := new(Catalog)
 
-	files, err := ioutil.ReadDir("vseinstrumenty/data/pages")
+	files, err := ioutil.ReadDir(DataPath + "/pages")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -241,7 +241,7 @@ func StepFour() {
 	for _, file := range files {
 		log.Println(file.Name())
 
-		f, err := os.Open("vseinstrumenty/data/pages/" + file.Name())
+		f, err := os.Open(DataPath + "/pages/" + file.Name())
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -290,7 +290,7 @@ func StepFour() {
 		catalog.Items = append(catalog.Items, item)
 	}
 
-	rf, err := os.Create("vseinstrumenty/data/catalog.xml")
+	rf, err := os.Create(DataPath + "/catalog.xml")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -299,11 +299,11 @@ func StepFour() {
 	xml.NewEncoder(rf).Encode(catalog)
 }
 
-func main() {
+func Run() {
 	log.Println("Start")
 	//StepOne()
 	//StepTwo()
-	StepThree()
-	//StepFour()
+	//StepThree()
+	StepFour()
 	log.Println("Finish")
 }
