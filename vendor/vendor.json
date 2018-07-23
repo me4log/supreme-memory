@@ -1,0 +1,31 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "l1dgFJfzGLG/2AEPyt6ADsnVLPQ=",
+			"path": "github.com/PuerkitoBio/goquery",
+			"revision": "dc2ec5c7ca4d9aae063b79b9f581dd3ea6afd2b2",
+			"revisionTime": "2018-06-07T15:06:10Z"
+		},
+		{
+			"checksumSHA1": "Q/2QpI7E35SsNYfaxLsWHFry9k4=",
+			"path": "github.com/andybalholm/cascadia",
+			"revision": "901648c87902174f774fac311d7f176f8647bdaa",
+			"revisionTime": "2018-02-20T18:43:36Z"
+		},
+		{
+			"checksumSHA1": "1c4mJK7gaUXt0/442AqB4Trn+kM=",
+			"path": "golang.org/x/net/html",
+			"revision": "a680a1efc54dd51c040b3b5ce4939ea3cf2ea0d1",
+			"revisionTime": "2018-07-19T17:54:20Z"
+		},
+		{
+			"checksumSHA1": "xwhqe/igHQrY3IhqDwzo6j7qpm8=",
+			"path": "golang.org/x/net/html/atom",
+			"revision": "a680a1efc54dd51c040b3b5ce4939ea3cf2ea0d1",
+			"revisionTime": "2018-07-19T17:54:20Z"
+		}
+	],
+	"rootPath": "goods.ru/grab-it"
+}

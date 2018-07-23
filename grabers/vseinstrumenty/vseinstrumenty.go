@@ -1,26 +1,32 @@
-package main
+package vseinstrumenty.go
 
 import (
+	"bufio"
 	"encoding/xml"
-	"net/http"
-	"time"
-	"log"
-	"os"
-	"sync"
+	"fmt"
 	"io"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
 	"strconv"
 	"strings"
-	"bufio"
-	"fmt"
+	"sync"
+	"time"
+
 	"github.com/PuerkitoBio/goquery"
-	"io/ioutil"
 )
 
 const (
 	SiteMapURL = "http://www.vseinstrumenti.ru/sitemap.xml"
-	FilesCount = 17
+	FilesCount = 13
 	Template1  = "http://www.vseinstrumenti.ru/instrument/shurupoverty/akkumulyatornye_dreli-shurupoverty/"
 	Template2  = "http://www.vseinstrumenti.ru/instrument/perforatory/"
+	Template3  = "http://www.vseinstrumenti.ru/instrument/shurupoverty/akkumulyatornye_dreli-shurupoverty/bezudarnye/"
+	Template4  = "http://www.vseinstrumenti.ru/instrument/shurupoverty/akkumulyatornye_dreli-shurupoverty/udarnye/"
+	Template5  = "http://www.vseinstrumenti.ru/instrument/shurupoverty/setevye/"
+	Template6  = "http://www..vseinstrumenti.ru/instrument/dreli/bezudarnye/"
+	Template7  = "http://www.vseinstrumenti.ru/instrument/dreli/udarnye/"
 )
 
 type CatalogItemMeasure struct {
@@ -109,7 +115,7 @@ func downloadAndSaveXML(url string, fileIndex string, wg *sync.WaitGroup) {
 
 	fileName := fileIndex + ".xml"
 
-	f, err := os.Create("data/" + fileName)
+	f, err := os.Create("vseinstrumenty/data/" + fileName)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -128,11 +134,10 @@ func StepOne() {
 	}
 	defer res.Body.Close()
 
-
 	siteMap := new(SiteMapIndex)
 	xml.NewDecoder(res.Body).Decode(siteMap)
 
-	f, err := os.Create("data/sitemap.xml")
+	f, err := os.Create("vseinstrumenty/data/sitemap.xml")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -153,7 +158,7 @@ func StepOne() {
 func getLinks(fileIndex int, c chan []string) {
 
 	links := make([]string, 0)
-	f, err := os.Open("data/" + strconv.Itoa(fileIndex) + ".xml")
+	f, err := os.Open("vseinstrumenty/data/" + strconv.Itoa(fileIndex) + ".xml")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -163,7 +168,13 @@ func getLinks(fileIndex int, c chan []string) {
 	xml.NewDecoder(f).Decode(urlset)
 
 	for _, url := range urlset.Urls {
-		if strings.Contains(url.Url, Template1) || strings.Contains(url.Url, Template2) {
+		if strings.Contains(url.Url, Template1) ||
+			strings.Contains(url.Url, Template2) ||
+			strings.Contains(url.Url, Template3) ||
+			strings.Contains(url.Url, Template4) ||
+			strings.Contains(url.Url, Template5) ||
+			strings.Contains(url.Url, Template6) ||
+			strings.Contains(url.Url, Template7) {
 			links = append(links, url.Url)
 		}
 	}
@@ -185,7 +196,7 @@ func StepTwo() {
 		}
 	}
 	close(c)
-	writeLines(links, "data/links.txt")
+	writeLines(links, "vseinstrumenty/data/links.txt")
 }
 
 func getAndSavePage(url string, fileName string) {
@@ -197,7 +208,7 @@ func getAndSavePage(url string, fileName string) {
 	}
 	defer res.Body.Close()
 
-	f, err := os.Create("data/pages/" + fileName)
+	f, err := os.Create("vseinstrumenty/data/pages/" + fileName)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -207,7 +218,7 @@ func getAndSavePage(url string, fileName string) {
 }
 
 func StepThree() {
-	links, err := readLines("data/links.txt")
+	links, err := readLines("vseinstrumenty/data/links.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -222,7 +233,7 @@ func StepFour() {
 
 	catalog := new(Catalog)
 
-	files, err := ioutil.ReadDir("data/pages")
+	files, err := ioutil.ReadDir("vseinstrumenty/data/pages")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -230,12 +241,11 @@ func StepFour() {
 	for _, file := range files {
 		log.Println(file.Name())
 
-		f, err := os.Open("data/pages/" + file.Name())
+		f, err := os.Open("vseinstrumenty/data/pages/" + file.Name())
 		if err != nil {
 			log.Fatal(err)
 		}
 		defer f.Close()
-
 
 		doc, err := goquery.NewDocumentFromReader(f)
 		if err != nil {
@@ -280,7 +290,7 @@ func StepFour() {
 		catalog.Items = append(catalog.Items, item)
 	}
 
-	rf, err := os.Create("data/catalog.xml")
+	rf, err := os.Create("vseinstrumenty/data/catalog.xml")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -291,9 +301,9 @@ func StepFour() {
 
 func main() {
 	log.Println("Start")
-	//stepOne()
+	//StepOne()
 	//StepTwo()
-	//StepThree()
-	StepFour()
+	StepThree()
+	//StepFour()
 	log.Println("Finish")
 }
