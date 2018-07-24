@@ -20,13 +20,9 @@ const (
 	DataPath   = "grabers/vseinstrumenty/data/"
 	SiteMapURL = "http://www.vseinstrumenti.ru/sitemap.xml"
 	FilesCount = 13
-	Template1  = "http://www.vseinstrumenti.ru/instrument/shurupoverty/akkumulyatornye_dreli-shurupoverty/"
+	Template1  = "http://www.vseinstrumenti.ru/instrument/shurupoverty/"
 	Template2  = "http://www.vseinstrumenti.ru/instrument/perforatory/"
-	Template3  = "http://www.vseinstrumenti.ru/instrument/shurupoverty/akkumulyatornye_dreli-shurupoverty/bezudarnye/"
-	Template4  = "http://www.vseinstrumenti.ru/instrument/shurupoverty/akkumulyatornye_dreli-shurupoverty/udarnye/"
-	Template5  = "http://www.vseinstrumenti.ru/instrument/shurupoverty/setevye/"
-	Template6  = "http://www..vseinstrumenti.ru/instrument/dreli/bezudarnye/"
-	Template7  = "http://www.vseinstrumenti.ru/instrument/dreli/udarnye/"
+	Template3  = "http://www.vseinstrumenti.ru/instrument/dreli/"
 )
 
 type CatalogItemMeasure struct {
@@ -44,6 +40,7 @@ type CatalogItemAttribute struct {
 type CatalogItem struct {
 	XMLName      xml.Name                `xml:"catalogItem"`
 	Name         string                  `xml:"name"`
+	ShortName    string                  `xml:"shortName"`
 	Description  string                  `xml:"description"`
 	Attributes   []*CatalogItemAttribute `xml:"attributes>attribute"`
 	Equipment    []string                `xml:"equipments>equipment"`
@@ -170,11 +167,7 @@ func getLinks(fileIndex int, c chan []string) {
 	for _, url := range urlset.Urls {
 		if strings.Contains(url.Url, Template1) ||
 			strings.Contains(url.Url, Template2) ||
-			strings.Contains(url.Url, Template3) ||
-			strings.Contains(url.Url, Template4) ||
-			strings.Contains(url.Url, Template5) ||
-			strings.Contains(url.Url, Template6) ||
-			strings.Contains(url.Url, Template7) {
+			strings.Contains(url.Url, Template3) {
 			links = append(links, url.Url)
 		}
 	}
@@ -259,8 +252,9 @@ func StepFour() {
 
 		item := new(CatalogItem)
 
-		item.Name = strings.Replace(doc.Find("#card-h1-reload-new").Text(), "\n", "", -1)
-		item.Description = strings.Replace(doc.Find("[itemprop=\"description\"] p").Text(), "\n", "", -1)
+		item.Name = strings.TrimSpace(strings.Replace(doc.Find("#card-h1-reload-new").Text(), "\n", "", -1))
+		item.Description = strings.TrimSpace(strings.Replace(doc.Find("[itemprop=\"description\"] p").Text(), "\n", "", -1))
+		item.ShortName = strings.TrimSpace(strings.Replace(strings.Replace(doc.Find("#cardVendorSclonenie13").Text(), "\n", "", -1), "Технические характеристики", "", -1))
 
 		chars.Each(func(i1 int, s1 *goquery.Selection) {
 			attribute := new(CatalogItemAttribute)
@@ -301,9 +295,9 @@ func StepFour() {
 
 func Run() {
 	log.Println("Start")
-	//StepOne()
-	//StepTwo()
-	//StepThree()
+	StepOne()
+	StepTwo()
+	StepThree()
 	StepFour()
 	log.Println("Finish")
 }
