@@ -1,7 +1,9 @@
 package main
 
-import "goods.ru/grab-it/grabers/vseinstrumenty"
+import (
+	"goods.ru/grab-it/grabers/autofanatik"
+)
 
 func main() {
-	vseinstrumenty.Run()
+	autofanatik.Run()
 }
