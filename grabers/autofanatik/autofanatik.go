@@ -2,10 +2,7 @@ package autofanatik
 
 import (
 	"encoding/xml"
-	"net/http"
-	"time"
 	"os"
-	"io"
 	"log"
 	"strconv"
 	"github.com/PuerkitoBio/goquery"
@@ -14,6 +11,7 @@ import (
 	"io/ioutil"
 	"strings"
 	"sync"
+	lib "goods.ru/grab-it/libs"
 )
 
 const (
@@ -74,38 +72,8 @@ type SiteMapUrls struct {
 	Urls    []*SiteMapUrl `xml:"url"`
 }
 
-func downloadAndSave(url string, file string) (error) {
-
-	client := http.Client{Timeout: 10 * time.Second}
-	res, err := client.Get(url)
-	if res != nil {
-		defer res.Body.Close()
-	}
-	if err != nil {
-		return err;
-	}
-
-	f, err := os.Create(file)
-	if err != nil {
-		return err;
-	}
-	defer f.Close()
-
-	io.Copy(f, res.Body)
-	return nil
-}
-
-func downloadAndSaveChan(url string, file string, c chan struct{}, e chan error) {
-	err := downloadAndSave(url, file)
-	if err != nil {
-		e <- err
-		return
-	}
-	c <- struct{}{}
-}
-
 func getSiteMap() (error) {
-	return downloadAndSave(SipeMapUrl, SiteMapPath)
+	return lib.DownloadAndSave(SipeMapUrl, SiteMapPath, "")
 }
 
 func getPages() (error) {
@@ -123,7 +91,7 @@ func getPages() (error) {
 	for index, url := range siteMap.Urls {
 		fileName := PagesDataPath + "page" + strconv.Itoa(index) + ".html"
 		log.Println("** " + strconv.Itoa(index) + ".html :" + url.Url)
-		if err := downloadAndSave(url.Url, fileName); err != nil {
+		if err := lib.DownloadAndSave(url.Url, fileName, ""); err != nil {
 			log.Println(err);
 		}
 	}
@@ -357,7 +325,7 @@ func getNextImageName() (string) {
 
 func downloadCatalogImages(catalog *Catalog, prefix string) {
 
-	dc := make(chan struct{}, 10)
+	dc := make(chan string, 10)
 	ec := make(chan error, 10)
 
 	total := len(catalog.Items)
@@ -372,7 +340,7 @@ func downloadCatalogImages(catalog *Catalog, prefix string) {
 			imageName := getNextImageName() + e
 			imagePath := ImagesDataPath + imageName
 
-			go downloadAndSaveChan(fixedUrl.FixedUrl, imagePath, dc, ec)
+			go lib.DownloadAndSaveChan(fixedUrl.FixedUrl, imagePath, dc, ec)
 
 			select {
 			case <-dc:
@@ -416,8 +384,10 @@ func downloadImages() (error) {
 	return nil
 }
 
-func Run() {
-	//getSiteMap()
+func Run() (error) {
+
+	return getSiteMap();
+
 	//getPages()
 
 	//catalog, err := parsePages()
@@ -431,9 +401,9 @@ func Run() {
 	//	}
 	//}
 
-	if err := findImages(); err != nil {
-		log.Fatal(err)
-	}
+	//if err := findImages(); err != nil {
+	//	log.Fatal(err)
+	//}
 
 	//if err := downloadImages(); err != nil {
 	//	log.Fatal(err)

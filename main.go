@@ -1,9 +1,12 @@
 package main
 
 import (
-	"goods.ru/grab-it/grabers/autofanatik"
+	"log"
+	"goods.ru/grab-it/grabers/compyou"
 )
 
 func main() {
-	autofanatik.Run()
+	if err := compyou.Run(); err != nil {
+		log.Fatal(err);
+	}
 }
