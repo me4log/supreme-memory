@@ -21,6 +21,7 @@ const (
 	ImagesDataPath = DataPath + "images/"
 	SiteMapPath    = DataPath + "sitemap.xml"
 	CatalogPath    = DataPath + "/catalog.xml"
+	ImagedCatalogPath    = DataPath + "/icatalog.xml"
 )
 
 type SiteMapUrl struct {
@@ -237,9 +238,33 @@ func convertPages(directory string) (error) {
 	return nil;
 }
 
+func getImages() (error) {
+	catalog, err := openCatalog(CatalogPath)
+	if err != nil {
+		return err
+	}
+
+	bar := pb.StartNew(len(catalog.Items)).Prefix("Image download")
+	bar.SetWidth(80)
+	bar.ShowSpeed = true
+	for i, item := range catalog.Items {
+		bar.Increment()
+		for j, file := range item.Images {
+			imageFile := ImagesDataPath + "image-" + strconv.Itoa(i) + "-" + strconv.Itoa(j) + ".jpg"
+			err  = lib.DownloadAndSave(file.Url, imageFile, "")
+			if err == nil {
+				file.File = imageFile
+			}
+		}
+	}
+	bar.Finish()
+	return saveCatalog(catalog, ImagedCatalogPath)
+}
+
 func Run() (error) {
 	//return getSiteMap();
 	//return getPages()
 	//convertPages()
-	return parsePages()
+	//return parsePages()
+	return getImages()
 }
